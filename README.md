@@ -51,19 +51,31 @@ npm run build
 
 ## Screenshots
 
+### Main Features
+
+![Search Interface](docs/screenshots/ss-01.jpeg)
+*Search GitHub issues with filters*
+
+![AI Analysis](docs/screenshots/ss-00.jpeg)
+*Get AI-powered insights on issues*
+
+![Issue Report](docs/screenshots/ss-03.jpeg)
+![Issue Report](docs/screenshots/ss-04.jpeg)
+*Analysis Current Issue Page and Generate a Report*
+
 ### Step-by-Step Guide
 
-![Step 1: Open Settings](docs/steps/01-open-settings.jpeg)  
-*Open the extension settings*
+1. ![Open Settings](docs/steps/01-open-settings.jpeg)
+   *Open the extension settings*
 
-![Step 2: Save Settings](docs/steps/02-save-settings.jpeg)  
-*Configure and save your settings*
+2. ![Save Settings](docs/steps/02-save-settings.jpeg)
+   *Configure and save your settings*
 
-![Step 3: Search Issues](docs/steps/03-input-search-text-and-get-detail.jpeg)  
-*Search issues and view details*
+3. ![Search Issues](docs/steps/03-input-search-text-and-get-detail.jpeg)
+   *Search issues and view details*
 
-![Step 4: Get AI Analysis](docs/steps/04-input-your-question-and-waiting-for-answer.jpeg)  
-*Get AI-powered analysis of issues*
+4. ![AI Analysis](docs/steps/04-input-your-question-and-waiting-for-answer.jpeg)
+   *Get AI-powered analysis of issues*
 
 ## Development
 

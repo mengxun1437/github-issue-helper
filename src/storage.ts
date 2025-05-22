@@ -3,6 +3,7 @@ import type { Issue } from './github-utils/issues';
 interface Config {
   githubToken?: string;
   openaiKey?: string;
+  language?: string; // zh-CN, en, etc.
   llmConfig?: {
     provider: string;
     apiKey: string;
@@ -15,10 +16,13 @@ interface Config {
 
 export async function getConfig(): Promise<Config> {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(['githubToken', 'openaiKey', 'llmConfig', 'currentRepo', 'issues'], (result) => {
-      console.log('Config loaded:', result);
-      resolve(result as Config);
-    });
+    chrome.storage.sync.get(
+      ['githubToken', 'openaiKey', 'language', 'llmConfig', 'currentRepo', 'issues'],
+      (result) => {
+        console.log('Config loaded:', result);
+        resolve(result as Config);
+      }
+    );
   });
 }
 

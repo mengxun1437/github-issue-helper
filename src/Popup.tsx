@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { LANGUAGES } from './lang'
 import { searchAllIssues, getIssue } from './github-utils/issues'
-import type { Issue } from './github-utils/issues'
+import type { IssueDetail } from './github-utils/issues'
 import { analyzeIssue, type LLMResponse } from './llm'
+
+interface Issue extends IssueDetail {
+    has_search?: boolean
+}
 
 interface LLMProvider {
     apiUrl: string
@@ -29,6 +34,7 @@ const LLMProviders: Record<string, LLMProvider> = {
 const Popup: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'search' | 'settings' | 'analysis'>('search')
     const [githubToken, setGithubToken] = useState('')
+    const [language, setLanguage] = useState('zh-CN') // 默认中文
     const [selectedLLM, setSelectedLLM] = useState('DeepSeek')
     const [selectedModel, setSelectedModel] = useState(LLMProviders.DeepSeek.models[0])
     const [llmApiKey, setLlmApiKey] = useState('')
@@ -48,8 +54,9 @@ const Popup: React.FC = () => {
     const [fetchProgress, setFetchProgress] = useState(0)
 
     useEffect(() => {
-        chrome.storage.sync.get(['githubToken', 'llmConfig', 'searchConfig'], (result: {
+        chrome.storage.sync.get(['githubToken', 'language', 'llmConfig', 'searchConfig'], (result: {
             githubToken?: string;
+            language?: string;
             llmConfig?: {
                 provider: string;
                 apiKey: string;
@@ -61,6 +68,7 @@ const Popup: React.FC = () => {
             };
         }) => {
             if (result.githubToken) setGithubToken(result.githubToken)
+            if (result.language) setLanguage(result.language)
             if (result.llmConfig) {
                 setSelectedLLM(result.llmConfig.provider)
                 setSelectedModel(
@@ -78,6 +86,7 @@ const Popup: React.FC = () => {
     const handleSave = () => {
         chrome.storage.sync.set({
             githubToken,
+            language,
             llmConfig: {
                 provider: selectedLLM,
                 apiKey: llmApiKey,
@@ -251,21 +260,22 @@ const Popup: React.FC = () => {
 
                                                 const updatedIssues = [...issues];
                                                 // 先计算已有详情的数量
-                                                const existingDetails = issues.filter(issue => issue.issueDetail).length;
+                                                const existingDetails = issues.filter(issue => issue.has_search).length;
                                                 processed = existingDetails;
                                                 setFetchProgress(Math.round((processed / total) * 100));
 
                                                 for (let i = 0; i < total; i += batchSize) {
                                                     const batch = updatedIssues.slice(i, i + batchSize);
                                                     const promises = batch
-                                                        .filter(issue => !issue.issueDetail)
+                                                        .filter(issue => !issue.has_search)
                                                         .map((issue, index) => {
                                                             const issueId = issue.html_url.split('/').pop()
                                                             return getIssue(githubToken, repoInfo.owner!, repoInfo.repo!, Number(issueId))
                                                                 .then(detailedIssue => {
                                                                     updatedIssues[i + index] = {
                                                                         ...issue,
-                                                                        issueDetail: detailedIssue
+                                                                        ...detailedIssue,
+                                                                        has_search: true
                                                                     };
                                                                     processed++;
                                                                     setFetchProgress(Math.round((processed / total) * 100));
@@ -542,6 +552,23 @@ const Popup: React.FC = () => {
             ) : (
                 <>
                     <h2>Settings</h2>
+
+                    <div style={{ marginBottom: '15px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px' }}>
+                            Language:
+                            <select
+                                value={language}
+                                onChange={(e) => setLanguage(e.target.value)}
+                                style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+                            >
+                                {LANGUAGES.map(lang => (
+                                    <option key={lang.value} value={lang.value}>
+                                        {lang.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
 
                     <div style={{ marginBottom: '15px' }}>
                         <label style={{ display: 'block', marginBottom: '5px' }}>
