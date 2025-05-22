@@ -1,54 +1,83 @@
-# React + TypeScript + Vite
+# GitHub Issue Helper
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A browser extension that helps you search, analyze and manage GitHub issues more efficiently.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔍 Search GitHub issues with advanced filters
+- 📊 Analyze issue content using AI (supports OpenAI and DeepSeek)
+- ⚙️ Customizable LLM settings (API endpoints and models)
+- 📥 Export issue data as JSON
+- 🚀 Stream AI responses in real-time
 
-## Expanding the ESLint configuration
+## Installation
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+1. Clone this repository
+```bash
+git clone https://github.com/your-repo/github-issue-helper.git
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+2. Install dependencies
+```bash
+npm install
 ```
+
+3. Build the extension
+```bash
+npm run build
+```
+
+4. Load the extension in Chrome/Edge:
+   - Open `chrome://extensions/`
+   - Enable "Developer mode"
+   - Click "Load unpacked" and select the `dist` folder
+
+## Configuration
+
+1. Open the extension popup
+2. Go to Settings tab
+3. Configure:
+   - GitHub access token
+   - LLM provider (OpenAI/DeepSeek/Custom)
+   - API keys and endpoints
+   - Search preferences (e.g. only closed issues)
+
+## Usage
+
+1. Navigate to any GitHub repository page
+2. Click the extension icon
+3. Search issues by keywords
+4. Click "Analyze" to get AI insights
+
+## Screenshots
+
+### Step-by-Step Guide
+
+![Step 1: Open Settings](docs/steps/01-open-settings.jpeg)  
+*Open the extension settings*
+
+![Step 2: Save Settings](docs/steps/02-save-settings.jpeg)  
+*Configure and save your settings*
+
+![Step 3: Search Issues](docs/steps/03-input-search-text-and-get-detail.jpeg)  
+*Search issues and view details*
+
+![Step 4: Get AI Analysis](docs/steps/04-input-your-question-and-waiting-for-answer.jpeg)  
+*Get AI-powered analysis of issues*
+
+## Development
+
+```bash
+# Run dev server
+npm run dev
+
+# Build for production
+npm run build
+
+# Lint code
+npm run lint
+```
+
+## License
+
+MIT

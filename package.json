@@ -1,5 +1,5 @@
 {
-  "name": "github-helper",
+  "name": "github-issue-helper",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,7 +13,8 @@
     "@octokit/core": "^7.0.2",
     "openai": "^4.98.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

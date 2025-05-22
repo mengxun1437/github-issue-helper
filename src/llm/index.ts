@@ -6,7 +6,11 @@ export interface LLMResponse {
   tokensUsed: number;
 }
 
-export async function generateWithOpenAI(systemPrompt: string, prompt: string): Promise<LLMResponse> {
+export async function generateWithOpenAI(
+  systemPrompt: string,
+  prompt: string,
+  onStream?: (chunk: string) => void
+): Promise<LLMResponse> {
   const llmConfig = (await getConfig())?.llmConfig;
   if (!llmConfig?.apiKey) {
     throw new Error('OpenAI API key not configured');
@@ -20,19 +24,45 @@ export async function generateWithOpenAI(systemPrompt: string, prompt: string): 
 
   const model = llmConfig?.model || 'gpt-4';
 
-  const response = await openai.chat.completions.create({
-    model,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: prompt }
-    ],
-    temperature: 0.7
-  });
+  if (onStream) {
+    // Stream mode
+    let fullContent = '';
+    const stream = await openai.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.7,
+      stream: true
+    });
 
-  return {
-    content: response.choices[0]?.message?.content || '',
-    tokensUsed: response.usage?.total_tokens || 0
-  };
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      fullContent += content;
+      onStream(content);
+    }
+
+    return {
+      content: fullContent,
+      tokensUsed: 0 // Can't get token count in streaming mode
+    };
+  } else {
+    // Normal mode
+    const response = await openai.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.7
+    });
+
+    return {
+      content: response.choices[0]?.message?.content || '',
+      tokensUsed: response.usage?.total_tokens || 0
+    };
+  }
 }
 
 export function getIssueSystemPrompt(userData: string) {
@@ -53,7 +83,11 @@ ${userData}
 - **Output:** "La capital de España es Madrid. [Fuente](https://es.wikipedia.org/wiki/Madrid)"`;
 }
 
-export async function analyzeIssue(userQuestion: string, userData: string) {
+export async function analyzeIssue(
+  userQuestion: string,
+  userData: string,
+  onStream?: (chunk: string) => void
+) {
   const userPrompt = `My Question Is: ${userQuestion}`;
-  return await generateWithOpenAI(getIssueSystemPrompt(userData), userPrompt);
+  return await generateWithOpenAI(getIssueSystemPrompt(userData), userPrompt, onStream);
 }

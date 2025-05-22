@@ -7,7 +7,7 @@
         "default_popup": "index.html"
     },
     "host_permissions": [
-        "github.com/*"
+        "github.com"
     ],
     "permissions": [
         "storage",

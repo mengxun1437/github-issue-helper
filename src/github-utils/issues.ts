@@ -46,12 +46,16 @@ export async function searchIssues(
   repo: string,
   query?: string,
   page = 1,
-  perPage = 100
+  perPage = 100,
+  onlyClosed = false
 ): Promise<Issue[]> {
   const octokit = new Octokit({ auth: token });
-  const searchQuery = [`repo:${owner}/${repo}`, 'type:issue', 'state:closed', ...(query ? [query] : [])].join(
-    ' '
-  );
+  const searchQuery = [
+    `repo:${owner}/${repo}`,
+    'type:issue',
+    ...(onlyClosed ? ['state:closed'] : []),
+    ...(query ? [query] : [])
+  ].join(' ');
 
   const response = await octokit.request('GET /search/issues', {
     q: searchQuery,
@@ -77,7 +81,8 @@ export async function searchAllIssues(
   owner: string,
   repo: string,
   query?: string,
-  maxResults = 1000
+  maxResults = 1000,
+  onlyClosed = false
 ): Promise<Issue[]> {
   const perPage = 100;
   const totalPages = Math.ceil(maxResults / perPage);
@@ -85,7 +90,7 @@ export async function searchAllIssues(
   // Prepare all page requests
   const pageRequests = [];
   for (let page = 1; page <= totalPages; page++) {
-    pageRequests.push(searchIssues(token, owner, repo, query, page, perPage));
+    pageRequests.push(searchIssues(token, owner, repo, query, page, perPage, onlyClosed));
   }
 
   // Execute all requests in parallel

@@ -23,6 +23,9 @@ declare namespace chrome {
           };
           currentRepo?: string;
           openaiKey?: string;
+          searchConfig?: {
+            onlySearchClosedIssue?: boolean;
+          };
         },
         callback?: () => void
       ): void;
