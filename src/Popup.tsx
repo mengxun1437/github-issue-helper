@@ -27,7 +27,7 @@ const LLMProviders: Record<string, LLMProvider> = {
 
 
 const Popup: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'main' | 'settings'>('main')
+    const [activeTab, setActiveTab] = useState<'search' | 'settings' | 'analysis'>('search')
     const [githubToken, setGithubToken] = useState('')
     const [selectedLLM, setSelectedLLM] = useState('DeepSeek')
     const [selectedModel, setSelectedModel] = useState(LLMProviders.DeepSeek.models[0])
@@ -91,7 +91,7 @@ const Popup: React.FC = () => {
                 onlySearchClosedIssue
             }
         }, () => {
-            setActiveTab('main')
+            setActiveTab('search')
         })
     }
 
@@ -135,7 +135,7 @@ const Popup: React.FC = () => {
             borderRadius: '8px',
             boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
         }}>
-            {activeTab === 'main' ? (
+            {activeTab === 'search' || activeTab === 'analysis' ? (
                 <>
                     <div style={{
                         display: 'flex',
@@ -158,7 +158,7 @@ const Popup: React.FC = () => {
                         color: '#586069'
                     }}>Current Repository: {repoInfo.owner}/{repoInfo.repo}</p>
 
-                    <div style={{
+                    {activeTab === 'search' && <><div style={{
                         display: 'flex',
                         marginBottom: '12px',
                         gap: '8px'
@@ -224,226 +224,260 @@ const Popup: React.FC = () => {
                         </button>
                     </div>
 
-                    {requestDebug && (
-                        <div style={{
-                            marginBottom: '12px',
-                            padding: '12px',
-                            backgroundColor: 'white',
-                            borderRadius: '6px',
-                            fontSize: '13px',
-                            border: '1px solid #e1e4e8',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                        }}>
-                            <div><strong>Request URL:</strong> {requestDebug.url}</div>
-                            <div><strong>Status:</strong> {requestDebug.status}</div>
-                            <div>
-                                <strong>Results:</strong> {Array.isArray(requestDebug.data) ? requestDebug.data.length : 1} items
-                                <button
-                                    onClick={async () => {
-                                        if (!Array.isArray(requestDebug?.data) || isFetchingDetails) return;
-                                        setIsFetchingDetails(true);
-                                        try {
-                                            const issues = requestDebug.data as Issue[];
-                                            const total = issues.length;
-                                            let processed = 0;
-                                            const batchSize = 10;
-                                            const delay = 2000; // 2s delay between batches
-
-                                            const updatedIssues = [...issues];
-                                            // 先计算已有详情的数量
-                                            const existingDetails = issues.filter(issue => issue.issueDetail).length;
-                                            processed = existingDetails;
-                                            setFetchProgress(Math.round((processed / total) * 100));
-
-                                            for (let i = 0; i < total; i += batchSize) {
-                                                const batch = updatedIssues.slice(i, i + batchSize);
-                                                const promises = batch
-                                                    .filter(issue => !issue.issueDetail)
-                                                    .map((issue, index) => {
-                                                        const issueId = issue.html_url.split('/').pop()
-                                                        return getIssue(githubToken, repoInfo.owner!, repoInfo.repo!, Number(issueId))
-                                                            .then(detailedIssue => {
-                                                                updatedIssues[i + index] = {
-                                                                    ...issue,
-                                                                    issueDetail: detailedIssue
-                                                                };
-                                                                processed++;
-                                                                setFetchProgress(Math.round((processed / total) * 100));
-                                                            })
-                                                    }
-
-                                                    );
-
-                                                if (promises.length === 0) continue;
-                                                await Promise.all(promises);
-                                                if (i + batchSize < total) {
-                                                    await new Promise(resolve => setTimeout(resolve, delay));
-                                                }
-                                            }
-
-                                            setRequestDebug(prev => ({
-                                                ...prev!,
-                                                data: updatedIssues
-                                            }));
-                                        } finally {
-                                            setIsFetchingDetails(false);
-                                            setFetchProgress(0);
-                                        }
-                                    }}
-                                    disabled={isFetchingDetails}
-                                    style={{
-                                        marginLeft: '10px',
-                                        padding: '2px 6px',
-                                        fontSize: '10px',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    {isFetchingDetails ? 'Fetching...' : 'Get Details'}
-                                </button>
-                            </div>
-                            <details style={{ marginTop: '5px' }}>
-                                <summary style={{ cursor: 'pointer' }}>View Details</summary>
-                                <div style={{ marginTop: '5px' }}>
+                        {requestDebug && (
+                            <div style={{
+                                marginBottom: '12px',
+                                padding: '12px',
+                                backgroundColor: 'white',
+                                borderRadius: '6px',
+                                fontSize: '13px',
+                                border: '1px solid #e1e4e8',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                            }}>
+                                <div><strong>Request URL:</strong> {requestDebug.url}</div>
+                                <div><strong>Status:</strong> {requestDebug.status}</div>
+                                <div>
+                                    <strong>Results:</strong> {Array.isArray(requestDebug.data) ? requestDebug.data.length : 1} items
                                     <button
-                                        onClick={() => {
-                                            const text = JSON.stringify(requestDebug.data, null, 2);
-                                            const blob = new Blob([text], { type: 'application/json' });
-                                            const url = URL.createObjectURL(blob);
-                                            const a = document.createElement('a');
-                                            a.href = url;
-                                            a.download = 'issues-data.json';
-                                            a.click();
-                                            URL.revokeObjectURL(url);
+                                        onClick={async () => {
+                                            if (!Array.isArray(requestDebug?.data) || isFetchingDetails) return;
+                                            setIsFetchingDetails(true);
+                                            try {
+                                                const issues = requestDebug.data as Issue[];
+                                                const total = issues.length;
+                                                let processed = 0;
+                                                const batchSize = 10;
+                                                const delay = 2000; // 2s delay between batches
+
+                                                const updatedIssues = [...issues];
+                                                // 先计算已有详情的数量
+                                                const existingDetails = issues.filter(issue => issue.issueDetail).length;
+                                                processed = existingDetails;
+                                                setFetchProgress(Math.round((processed / total) * 100));
+
+                                                for (let i = 0; i < total; i += batchSize) {
+                                                    const batch = updatedIssues.slice(i, i + batchSize);
+                                                    const promises = batch
+                                                        .filter(issue => !issue.issueDetail)
+                                                        .map((issue, index) => {
+                                                            const issueId = issue.html_url.split('/').pop()
+                                                            return getIssue(githubToken, repoInfo.owner!, repoInfo.repo!, Number(issueId))
+                                                                .then(detailedIssue => {
+                                                                    updatedIssues[i + index] = {
+                                                                        ...issue,
+                                                                        issueDetail: detailedIssue
+                                                                    };
+                                                                    processed++;
+                                                                    setFetchProgress(Math.round((processed / total) * 100));
+                                                                })
+                                                        }
+
+                                                        );
+
+                                                    if (promises.length === 0) continue;
+                                                    await Promise.all(promises);
+                                                    if (i + batchSize < total) {
+                                                        await new Promise(resolve => setTimeout(resolve, delay));
+                                                    }
+                                                }
+
+                                                setRequestDebug(prev => ({
+                                                    ...prev!,
+                                                    data: updatedIssues
+                                                }));
+                                            } finally {
+                                                setIsFetchingDetails(false);
+                                                setFetchProgress(0);
+                                            }
                                         }}
+                                        disabled={isFetchingDetails}
                                         style={{
-                                            padding: '4px 8px',
-                                            fontSize: '12px',
-                                            marginBottom: '5px',
+                                            marginLeft: '10px',
+                                            padding: '2px 6px',
+                                            fontSize: '10px',
                                             cursor: 'pointer'
                                         }}
                                     >
-                                        Download Full Data
+                                        {isFetchingDetails ? 'Fetching...' : 'Get Details'}
                                     </button>
-                                    <pre style={{
-                                        maxHeight: '200px',
-                                        overflow: 'auto',
-                                        whiteSpace: 'pre-wrap',
-                                        wordWrap: 'break-word',
-                                        backgroundColor: '#f8f8f8',
-                                        padding: '8px',
-                                        borderRadius: '4px'
-                                    }}>
-                                        {JSON.stringify(
-                                            Array.isArray(requestDebug.data)
-                                                ? requestDebug.data.slice(0, 2)
-                                                : requestDebug.data,
-                                            null,
-                                            2
-                                        )}
-                                        {Array.isArray(requestDebug.data) && requestDebug.data.length > 10 && (
-                                            <div style={{ color: '#666', fontStyle: 'italic' }}>
-                                                (Showing first 10 items, {requestDebug.data.length - 10} more...)
-                                            </div>
-                                        )}
-                                    </pre>
                                 </div>
-                            </details>
-                        </div>)}
+                                <details style={{ marginTop: '5px' }}>
+                                    <summary style={{ cursor: 'pointer' }}>View Details</summary>
+                                    <div style={{ marginTop: '5px' }}>
+                                        <button
+                                            onClick={() => {
+                                                const text = JSON.stringify(requestDebug.data, null, 2);
+                                                const blob = new Blob([text], { type: 'application/json' });
+                                                const url = URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = url;
+                                                a.download = 'issues-data.json';
+                                                a.click();
+                                                URL.revokeObjectURL(url);
+                                            }}
+                                            style={{
+                                                padding: '4px 8px',
+                                                fontSize: '12px',
+                                                marginBottom: '5px',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            Download Full Data
+                                        </button>
+                                        <pre style={{
+                                            maxHeight: '200px',
+                                            overflow: 'auto',
+                                            whiteSpace: 'pre-wrap',
+                                            wordWrap: 'break-word',
+                                            backgroundColor: '#f8f8f8',
+                                            padding: '8px',
+                                            borderRadius: '4px'
+                                        }}>
+                                            {JSON.stringify(
+                                                Array.isArray(requestDebug.data)
+                                                    ? requestDebug.data.slice(0, 2)
+                                                    : requestDebug.data,
+                                                null,
+                                                2
+                                            )}
+                                            {Array.isArray(requestDebug.data) && requestDebug.data.length > 10 && (
+                                                <div style={{ color: '#666', fontStyle: 'italic' }}>
+                                                    (Showing first 10 items, {requestDebug.data.length - 10} more...)
+                                                </div>
+                                            )}
+                                        </pre>
+                                    </div>
+                                </details>
+                            </div>)}
 
-                    {isFetchingDetails && (
-                        <div style={{ marginTop: '10px' }}>
-                            <div style={{
-                                width: '100%',
-                                backgroundColor: '#e0e0e0',
-                                borderRadius: '4px'
-                            }}>
+                        {isFetchingDetails && (
+                            <div style={{ marginTop: '10px' }}>
                                 <div style={{
-                                    width: `${fetchProgress}%`,
-                                    height: '20px',
-                                    backgroundColor: '#0366d6',
-                                    borderRadius: '4px',
-                                    textAlign: 'center',
-                                    color: 'white',
-                                    lineHeight: '20px',
-                                    fontSize: '12px'
+                                    width: '100%',
+                                    backgroundColor: '#e0e0e0',
+                                    borderRadius: '4px'
                                 }}>
-                                    {fetchProgress}%
+                                    <div style={{
+                                        width: `${fetchProgress}%`,
+                                        height: '20px',
+                                        backgroundColor: '#0366d6',
+                                        borderRadius: '4px',
+                                        textAlign: 'center',
+                                        color: 'white',
+                                        lineHeight: '20px',
+                                        fontSize: '12px'
+                                    }}>
+                                        {fetchProgress}%
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {requestDebug && Array.isArray(requestDebug.data) && (
-                        <div style={{
-                            marginBottom: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px'
-                        }}>
-                            <input
-                                type="text"
-                                value={analysisQuestion}
-                                onChange={(e) => setAnalysisQuestion(e.target.value)}
-                                placeholder="What would you like to analyze?"
-                                style={{
-                                    flex: 1,
-                                    padding: '8px 12px',
-                                    border: '1px solid #e1e4e8',
-                                    borderRadius: '6px',
-                                    fontSize: '14px',
-                                    outline: 'none'
+                        {requestDebug && Array.isArray(requestDebug.data) && (
+                            <a
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    setActiveTab('analysis');
                                 }}
-                            />
-                            <button
-                                onClick={async () => {
-                                    if (!Array.isArray(requestDebug?.data)) return;
-                                    if (!llmApiKey) {
-                                        alert('Please set your LLM API Key in Settings first');
-                                        setActiveTab('settings');
-                                        return;
-                                    }
-                                    setIsAnalyzing(true);
-                                    try {
-                                        let fullContent = '';
-                                        setAnalysisResult({
-                                            content: '',
-                                            tokensUsed: 0
-                                        });
-
-                                        await analyzeIssue(
-                                            analysisQuestion,
-                                            JSON.stringify(requestDebug.data || {}),
-                                            (chunk) => {
-                                                fullContent += chunk;
-                                                setAnalysisResult({
-                                                    content: fullContent,
-                                                    tokensUsed: 0
-                                                });
-                                            }
-                                        );
-                                    } finally {
-                                        setIsAnalyzing(false);
-                                    }
-                                }}
-                                disabled={isAnalyzing}
                                 style={{
-                                    padding: '8px 12px',
-                                    backgroundColor: isAnalyzing ? '#8b949e' : '#2ea44f',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '6px',
+                                    marginTop: '10px',
+                                    display: 'inline-block',
+                                    color: '#0366d6',
+                                    textDecoration: 'none',
                                     cursor: 'pointer',
-                                    fontWeight: 500,
-                                    fontSize: '14px',
-                                    whiteSpace: 'nowrap'
+                                    fontSize: '14px'
                                 }}
                             >
-                                {isAnalyzing ? 'Analyzing...' : 'Analyze'}
-                            </button>
-                        </div>
+                                {'>'} Analyze these results
+                            </a>
+                        )}</>}
+
+                    {activeTab === 'analysis' && (
+                        <>
+                            <a
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    setActiveTab('search');
+                                }}
+                                style={{
+                                    marginBottom: '12px',
+                                    display: 'inline-block',
+                                    color: '#0366d6',
+                                    textDecoration: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '14px'
+                                }}
+                            >
+                                {'<'} Return to search
+                            </a>
+
+                            <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+                                <input
+                                    type="text"
+                                    value={analysisQuestion}
+                                    onChange={(e) => setAnalysisQuestion(e.target.value)}
+                                    placeholder="What would you like to analyze?"
+                                    style={{
+                                        flex: 1,
+                                        padding: '8px 12px',
+                                        border: '1px solid #e1e4e8',
+                                        borderRadius: '6px',
+                                        fontSize: '14px',
+                                        outline: 'none'
+                                    }}
+                                />
+                                <button
+                                    onClick={async () => {
+                                        if (!Array.isArray(requestDebug?.data)) return;
+                                        if (!llmApiKey) {
+                                            alert('Please set your LLM API Key in Settings first');
+                                            setActiveTab('settings');
+                                            return;
+                                        }
+                                        setIsAnalyzing(true);
+                                        try {
+                                            let fullContent = '';
+                                            setAnalysisResult({
+                                                content: '',
+                                                tokensUsed: 0
+                                            });
+
+                                            await analyzeIssue(
+                                                analysisQuestion,
+                                                JSON.stringify(requestDebug.data || {}),
+                                                (chunk) => {
+                                                    fullContent += chunk;
+                                                    setAnalysisResult({
+                                                        content: fullContent,
+                                                        tokensUsed: 0
+                                                    });
+                                                }
+                                            );
+                                        } finally {
+                                            setIsAnalyzing(false);
+                                        }
+                                    }}
+                                    disabled={isAnalyzing}
+                                    style={{
+                                        marginLeft: '10px',
+                                        padding: '8px 12px',
+                                        backgroundColor: isAnalyzing ? '#8b949e' : '#2ea44f',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontWeight: 500,
+                                        fontSize: '14px',
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+                                </button>
+                            </div>
+                        </>
                     )}
 
-                    {requestDebug && analysisResult && (
+                    {activeTab === 'analysis' && analysisResult && (
                         <div style={{
                             marginBottom: '12px',
                             padding: '16px',
